@@ -6,7 +6,6 @@ import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.util.HashMap;
 
-import javax.jms.*;
 import javax.swing.DefaultListModel;
 import javax.swing.JFrame;
 import javax.swing.JList;
@@ -14,10 +13,7 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.border.EmptyBorder;
 
-import mix.JMS.MessageReceiver;
-import mix.JMS.MessageSender;
 import mix.model.bank.*;
-import mix.model.loan.LoanReply;
 import mix.model.loan.LoanRequest;
 
 
@@ -33,6 +29,9 @@ public class LoanBrokerFrame extends JFrame {
 	private HashMap<String, BankInterestRequest> BirID = new HashMap<>();
 	private HashMap<String, String> BirLrLink = new HashMap<>();
 	private HashMap<String, LoanRequest> LrID = new HashMap<>();
+	public BrokerClientGateway brokerClientGateway;
+	public BrokerBankGateway bankGateway;
+
 	
 	public static void main(String[] args) {
 		EventQueue.invokeLater(new Runnable() {
@@ -78,77 +77,16 @@ public class LoanBrokerFrame extends JFrame {
 		list = new JList<>(listModel);
 		scrollPane.setViewportView(list);
 
-
-		setBankListener();
-		setClientListener();
+		brokerClientGateway = new BrokerClientGateway(this);
+		bankGateway = new BrokerBankGateway(this);
 	}
 
-	private void setClientListener() {
-		MessageConsumer consumer = new MessageReceiver().CreateReciever("tcp://localhost:61616", "LoanRequestDestination");
+	public void setNewLoanRequest(LoanRequest LR, String id){
+		//add new loan request to gui list of loan requests
+		addToList(LR);
 
-		//set consumer to listen
-		try {
-			consumer.setMessageListener(new MessageListener() {
-
-				@Override
-				public void onMessage(Message msg) {
-					System.out.println(msg);
-					try {
-						//save msg in HashMap
-						String id = msg.getJMSCorrelationID();
-						LoanRequest LR = (LoanRequest) ((ObjectMessage) msg).getObject();
-						LrID.put(id, LR);
-
-						//add to list
-						addToList(LR);
-
-						//send BIR to bank
-						SendBankInterestRequest(LR, id);
-					} catch (JMSException e) {
-						e.printStackTrace();
-					}
-				}
-			});
-
-		} catch (JMSException e) {
-			e.printStackTrace();
-		}
-	}
-
-	private void setBankListener() {
-		//create listener
-		MessageConsumer consumer = new MessageReceiver().CreateReciever("tcp://localhost:61616", "BIReplyDestination");
-
-		//set consumer to listen
-		try {
-			consumer.setMessageListener(new MessageListener() {
-
-				@Override
-				public void onMessage(Message msg) {
-					System.out.println(msg);
-					try {
-						//get id and BIR object
-						String id = msg.getJMSCorrelationID();
-						BankInterestReply BIR = (BankInterestReply) ((ObjectMessage) msg).getObject();
-
-						//get LR id
-						String LoanRqID = BirLrLink.get(id);
-						System.out.println("LoanRqID " + LoanRqID);
-
-						//add BIR object to list
-						add(LrID.get(LoanRqID),BIR);
-
-						//Send Loan Reply to the client
-						SendLoanReply(BIR, LoanRqID);
-					} catch (JMSException e) {
-						e.printStackTrace();
-					}
-				}
-			});
-
-		} catch (JMSException e) {
-			e.printStackTrace();
-		}
+		//send BankInterestRequest to bank
+		bankGateway.SendBankInterestRequest(LR, id);
 	}
 
 	private JListLine getRequestReply(LoanRequest request){
@@ -175,22 +113,12 @@ public class LoanBrokerFrame extends JFrame {
 		}		
 	}
 
-	public void SendLoanReply(BankInterestReply BIR, String LRid){
-		LoanReply LR = new LoanReply(BIR.getInterest(), BIR.getQuoteId());
-		new MessageSender().SendObject("tcp://localhost:61616", "LoanReplyDestination", LR, LRid);
-	}
+	public void NewLoanReply(String id,LoanRequest lr, BankInterestReply BIR){
+		//add BIR object to list
+		add(lr,BIR);
 
-	public void SendBankInterestRequest(LoanRequest LR, String LRid){
-		//create BIR
-		BankInterestRequest BIR = new BankInterestRequest(LR.getAmount(), LR.getTime());
-
-		//send msg with BIR
-		String id = new MessageSender().SendObject("tcp://localhost:61616","BIRequestDestination",BIR, "");
-
-		//save BIR to HashMap and update list
-		BirID.put(id, BIR);
-		BirLrLink.put(id, LRid);
-		addToList(LR,BIR);
+		//Send Loan Reply to the client
+		brokerClientGateway.SendLoanReplyToClient(id, BIR);
 	}
 
 	public void add(LoanRequest loanRequest, BankInterestReply bankReply){

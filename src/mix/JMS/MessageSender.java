@@ -11,7 +11,7 @@ import java.util.Random;
 public class MessageSender {
 
     public String SendObject(String _connection, String _destination, Object transmitObject, String msgid){
-        if(msgid == ""){
+        if(msgid == null || msgid == ""){
             msgid = createRandomString();
         }
 

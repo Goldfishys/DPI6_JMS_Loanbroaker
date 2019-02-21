@@ -21,7 +21,7 @@ public class LoanclientGateway {
     public LoanclientGateway(LoanClientFrame loanClientFrame){
         this.loanClientFrame = loanClientFrame;
         sender = new MessageSender();
-        reciever = new MessageReceiver("tcp://localhost:61616","LoanRequestDestination");
+        reciever = new MessageReceiver("tcp://localhost:61616","LoanReplyDestination");
         MessageListener ml = message -> OnLoanReplyArrived(message);
         reciever.setListener(ml);
     }

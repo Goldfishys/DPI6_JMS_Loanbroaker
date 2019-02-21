@@ -5,9 +5,7 @@ import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.util.*;
 
-import javax.jms.*;
 import javax.swing.DefaultListModel;
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -18,8 +16,6 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextField;
 import javax.swing.border.EmptyBorder;
 
-import mix.JMS.MessageReceiver;
-import mix.JMS.MessageSender;
 import mix.model.bank.*;
 import messaging.requestreply.RequestReply;
 
@@ -33,8 +29,7 @@ public class JMSBankFrame extends JFrame {
 	private JTextField tfReply;
 	private DefaultListModel<RequestReply<BankInterestRequest, BankInterestReply>> listModel = new DefaultListModel<>();
 	private JList<RequestReply<BankInterestRequest, BankInterestReply>> list = new JList<>(listModel);
-	private HashMap<BankInterestRequest,String> BirID = new HashMap<>();
-	
+	private BankGateway bankGateway;
 	/**
 	 * Launch the application.
 	 */
@@ -97,34 +92,25 @@ public class JMSBankFrame extends JFrame {
 		contentPane.add(tfReply, gbc_tfReply);
 		tfReply.setColumns(10);
 
-
-		CreateListener();
-		CreateProducer();
+		bankGateway = new BankGateway(this);
+		CreateSendBIRbutton();
 	}
 
-	public void CreateProducer(){
+	public void CreateSendBIRbutton(){
 		//create sender
 		JButton btnSendReply = new JButton("send reply");
 		btnSendReply.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				//get msgid
-				System.out.println("got here1");
 				RequestReply<BankInterestRequest, BankInterestReply> rr = list.getSelectedValue();
-				String msgid = BirID.get(rr.getRequest());
-				System.out.println(msgid);
+			 	BankInterestRequest	request = rr.getRequest();
 
 				//create reply
 				double interest = Double.parseDouble((tfReply.getText()));
 				BankInterestReply reply = new BankInterestReply(interest,"ABN AMRO");
-				System.out.println("Got here2");
-				//send reply
-				if (rr!= null && reply != null){
-					rr.setReply(reply);
-					list.repaint();
-					// todo: sent JMS message with the reply to Loan Broker
-					MessageSender MS = new MessageSender();
-					MS.SendObject("tcp://localhost:61616","BIReplyDestination",reply, msgid);
-				}
+
+				//send msg through gateway
+				bankGateway.SendBankInterestReply(request, reply);
 			}
 		});
 		GridBagConstraints gbc_btnSendReply = new GridBagConstraints();
@@ -134,34 +120,6 @@ public class JMSBankFrame extends JFrame {
 		contentPane.add(btnSendReply, gbc_btnSendReply);
 	}
 
-	public void CreateListener(){
-		//create listener
-		MessageConsumer consumer = new MessageReceiver().CreateReciever("tcp://localhost:61616", "BIRequestDestination");
-
-		//set consumer to listen
-		try {
-			consumer.setMessageListener(new MessageListener() {
-
-				@Override
-				public void onMessage(Message msg) {
-					try {
-						//add BIR to HashMap
-						String id = msg.getJMSCorrelationID();
-						BankInterestRequest BIR = (BankInterestRequest) ((ObjectMessage) msg).getObject();
-						BirID.put(BIR,id);
-
-						//add BIR to List
-						add(BIR);
-					} catch (JMSException e) {
-						e.printStackTrace();
-					}
-				}
-			});
-
-		} catch (JMSException e) {
-			e.printStackTrace();
-		}
-	}
 
 	public void add(BankInterestRequest BIR){
 		RequestReply rr = new RequestReply(BIR,null);
