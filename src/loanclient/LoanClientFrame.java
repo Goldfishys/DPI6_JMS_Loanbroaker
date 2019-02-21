@@ -3,9 +3,6 @@ import java.awt.EventQueue;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.util.HashMap;
 
 import javax.jms.*;
 import javax.swing.DefaultListModel;
@@ -19,8 +16,6 @@ import javax.swing.JTextField;
 import javax.swing.border.EmptyBorder;
 
 import messaging.requestreply.RequestReply;
-import mix.Gateway.MessageReciever;
-import mix.Gateway.MessageSender;
 import mix.model.loan.*;
 
 public class LoanClientFrame extends JFrame {
@@ -33,12 +28,12 @@ public class LoanClientFrame extends JFrame {
 	private JTextField tfSSN;
 	private DefaultListModel<RequestReply<LoanRequest, LoanReply>> listModel = new DefaultListModel<>();
 	private JList<RequestReply<LoanRequest, LoanReply>> requestReplyList;
-	private HashMap<String, LoanRequest> LrID = new HashMap<>();
 
 	private JTextField tfAmount;
 	private JLabel lblNewLabel;
 	private JLabel lblNewLabel_1;
 	private JTextField tfTime;
+	private LoanclientGateway LCgateway;
 
 	/**
 	 * Create the frame.
@@ -121,61 +116,34 @@ public class LoanClientFrame extends JFrame {
 		requestReplyList = new JList<>(listModel);
 		scrollPane.setViewportView(requestReplyList);
 
-		SetProducer();
-		SetListener();
+		LCgateway = new LoanclientGateway(this);
+		CreateSendButton();
 	}
 
-	private void SetListener() {
-
-		MessageReciever MR = new MessageReciever();
-		MessageConsumer consumer = MR.CreateReciever("tcp://localhost:61616","LoanReplyDestination");
-		//set consumer to listen
-		try {
-			consumer.setMessageListener(new MessageListener() {
-
-				@Override
-				public void onMessage(Message msg) {
-					System.out.println(msg);
-					try {
-						System.out.println("GOT A MESSAGE");
-						String id = msg.getJMSCorrelationID();
-						LoanRequest lr = LrID.get(id);
-
-						LoanReply LR = (LoanReply) ((ObjectMessage) msg).getObject();
-						getRequestReply(lr).setReply(LR);
-						requestReplyList.repaint();
-					} catch (JMSException e) {
-						e.printStackTrace();
-					}
-				}
-			});
-
-		} catch (JMSException e) {
-			e.printStackTrace();
-		}
-	}
-
-	private void SetProducer(){
+	private void CreateSendButton(){
 		JButton btnQueue = new JButton("send loan request");
-		btnQueue.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent arg0) {
-				int ssn = Integer.parseInt(tfSSN.getText());
-				int amount = Integer.parseInt(tfAmount.getText());
-				int time = Integer.parseInt(tfTime.getText());
+		btnQueue.addActionListener(arg0 -> {
+			//create request and add to list and refresh
+			int ssn = Integer.parseInt(tfSSN.getText());
+			int amount = Integer.parseInt(tfAmount.getText());
+			int time = Integer.parseInt(tfTime.getText());
+			LoanRequest request = new LoanRequest(ssn,amount,time);
+			listModel.addElement( new RequestReply<>(request, null));
 
-				LoanRequest request = new LoanRequest(ssn,amount,time);
-				listModel.addElement( new RequestReply<>(request, null));
-				// to do:  send the JMS with request to Loan Broker
-				MessageSender MS = new MessageSender();
-				String msgid = MS.SendObject("tcp://localhost:61616","LoanRequestDestination",request, "");
-				LrID.put(msgid, request);
-			}
+			//send request to broker
+			LCgateway.SendLoanRequestToBroker(request);
+
 		});
 		GridBagConstraints gbc_btnQueue = new GridBagConstraints();
 		gbc_btnQueue.insets = new Insets(0, 0, 5, 5);
 		gbc_btnQueue.gridx = 2;
 		gbc_btnQueue.gridy = 2;
 		contentPane.add(btnQueue, gbc_btnQueue);
+	}
+
+	public void UpdateRequestReply(LoanRequest loanrequest, LoanReply loanreply){
+		getRequestReply(loanrequest).setReply(loanreply);
+		requestReplyList.repaint();
 	}
 
 	/**

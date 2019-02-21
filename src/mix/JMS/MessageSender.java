@@ -1,4 +1,4 @@
-package mix.Gateway;
+package mix.JMS;
 
 import org.apache.activemq.ActiveMQConnectionFactory;
 

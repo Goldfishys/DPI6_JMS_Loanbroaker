@@ -18,8 +18,8 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextField;
 import javax.swing.border.EmptyBorder;
 
-import mix.Gateway.MessageReciever;
-import mix.Gateway.MessageSender;
+import mix.JMS.MessageReceiver;
+import mix.JMS.MessageSender;
 import mix.model.bank.*;
 import messaging.requestreply.RequestReply;
 
@@ -136,7 +136,7 @@ public class JMSBankFrame extends JFrame {
 
 	public void CreateListener(){
 		//create listener
-		MessageConsumer consumer = new MessageReciever().CreateReciever("tcp://localhost:61616", "BIRequestDestination");
+		MessageConsumer consumer = new MessageReceiver().CreateReciever("tcp://localhost:61616", "BIRequestDestination");
 
 		//set consumer to listen
 		try {

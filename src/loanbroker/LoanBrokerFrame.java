@@ -14,8 +14,8 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.border.EmptyBorder;
 
-import mix.Gateway.MessageReciever;
-import mix.Gateway.MessageSender;
+import mix.JMS.MessageReceiver;
+import mix.JMS.MessageSender;
 import mix.model.bank.*;
 import mix.model.loan.LoanReply;
 import mix.model.loan.LoanRequest;
@@ -84,7 +84,7 @@ public class LoanBrokerFrame extends JFrame {
 	}
 
 	private void setClientListener() {
-		MessageConsumer consumer = new MessageReciever().CreateReciever("tcp://localhost:61616", "LoanRequestDestination");
+		MessageConsumer consumer = new MessageReceiver().CreateReciever("tcp://localhost:61616", "LoanRequestDestination");
 
 		//set consumer to listen
 		try {
@@ -117,7 +117,7 @@ public class LoanBrokerFrame extends JFrame {
 
 	private void setBankListener() {
 		//create listener
-		MessageConsumer consumer = new MessageReciever().CreateReciever("tcp://localhost:61616", "BIReplyDestination");
+		MessageConsumer consumer = new MessageReceiver().CreateReciever("tcp://localhost:61616", "BIReplyDestination");
 
 		//set consumer to listen
 		try {
