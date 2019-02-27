@@ -6,10 +6,7 @@ import mix.model.bank.BankInterestReply;
 import mix.model.bank.BankInterestRequest;
 import mix.model.loan.LoanRequest;
 
-import javax.jms.JMSException;
-import javax.jms.Message;
-import javax.jms.MessageListener;
-import javax.jms.ObjectMessage;
+import javax.jms.*;
 import java.util.HashMap;
 
 public class BrokerBankGateway {
@@ -22,7 +19,7 @@ public class BrokerBankGateway {
         this.LoanBrokerFrame = LoanBrokerFrame;
         sender = new MessageSender();
         reciever = new MessageReceiver("tcp://localhost:61616", "BrokerBankInterestReplyDestination");
-        MessageListener ml = message -> OnBankInterestReplyArrived(message);
+        MessageListener ml = message -> OnBankInterestReplyArrived((TextMessage) message);
         reciever.setListener(ml);
     }
 
@@ -33,15 +30,15 @@ public class BrokerBankGateway {
         BankInterestRequest BIR = new BankInterestRequest(lr.getAmount(), lr.getTime());
 
         //send msg with BIR
-        sender.SendObject("tcp://localhost:61616","ABNBankRequestDestination",BIR, id);
+        sender.SendMessage("tcp://localhost:61616","ABNBankRequestDestination",BIR.Serialize(), id);
     }
 
-    public void OnBankInterestReplyArrived(Message msg){
+    public void OnBankInterestReplyArrived(TextMessage msg){
         System.out.println(msg);
         try {
             //get id and BIR object
             String id = msg.getJMSCorrelationID();
-            BankInterestReply BIR = (BankInterestReply) ((ObjectMessage) msg).getObject();
+            BankInterestReply BIR = new BankInterestReply(msg.getText());
 
             //get LR id
             LoanRequest loanRequest = LrID.get(id);

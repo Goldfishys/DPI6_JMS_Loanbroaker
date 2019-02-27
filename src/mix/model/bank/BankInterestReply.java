@@ -22,6 +22,12 @@ public class BankInterestReply implements Serializable {
         this.bankId = quoteId;
     }
 
+    public BankInterestReply(String str){
+        String[] args = str.split(";");
+        interest = Double.valueOf(args[0]);
+        bankId = args[1];
+    }
+
     public double getInterest() {
         return interest;
     }
@@ -38,7 +44,12 @@ public class BankInterestReply implements Serializable {
         this.bankId = quoteId;
     }
 
-    public String toString() {
-        return "quote=" + this.bankId + " interest=" + this.interest;
+    public String Serialize() {
+        return interest + ";" + bankId;
+    }
+
+    @Override
+    public String toString(){
+        return " interest=" + interest + " bankId=" + bankId;
     }
 }

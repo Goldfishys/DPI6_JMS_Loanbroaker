@@ -5,10 +5,7 @@ import mix.JMS.MessageSender;
 import mix.model.bank.BankInterestReply;
 import mix.model.bank.BankInterestRequest;
 
-import javax.jms.JMSException;
-import javax.jms.Message;
-import javax.jms.MessageListener;
-import javax.jms.ObjectMessage;
+import javax.jms.*;
 import java.util.HashMap;
 
 public class BankGateway {
@@ -21,15 +18,15 @@ public class BankGateway {
         this.JMSBankFrame = JMSBankFrame;
         sender = new MessageSender();
         reciever = new MessageReceiver("tcp://localhost:61616", "ABNBankRequestDestination");
-        MessageListener ml = message -> onBankInterestRequestArrived(message);
+        MessageListener ml = message -> onBankInterestRequestArrived((TextMessage) message);
         reciever.setListener(ml);
     }
 
-    public void onBankInterestRequestArrived(Message msg){
+    public void onBankInterestRequestArrived(TextMessage msg){
         try {
             //add BIR to HashMap
             String id = msg.getJMSCorrelationID();
-            BankInterestRequest BIR = (BankInterestRequest) ((ObjectMessage) msg).getObject();
+            BankInterestRequest BIR = new BankInterestRequest(msg.getText());
             BirID.put(BIR,id);
 
             //add BIR to List
@@ -41,6 +38,6 @@ public class BankGateway {
 
     public void SendBankInterestReply(BankInterestRequest bankInterestRequest, BankInterestReply bankInterestReply){
         String id = BirID.get(bankInterestRequest);
-        sender.SendObject("tcp://localhost:61616","BrokerBankInterestReplyDestination",bankInterestReply, id);
+        sender.SendMessage("tcp://localhost:61616","BrokerBankInterestReplyDestination",bankInterestReply.Serialize(), id);
     }
 }

@@ -1,6 +1,7 @@
 package mix.model.loan;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 
 /**
  *
@@ -28,6 +29,13 @@ public class LoanRequest implements Serializable {
         this.time = time;
     }
 
+    public LoanRequest(String str){
+        String[] args = str.split(";");
+        this.ssn = Integer.valueOf(args[0]);
+        this.amount = Integer.valueOf(args[1]);
+        this.time = Integer.valueOf(args[2]);
+    }
+
     public int getSsn() {
         return ssn;
     }
@@ -52,8 +60,12 @@ public class LoanRequest implements Serializable {
         this.time = time;
     }
 
+    public String Serialize() {
+        return ssn + ";" + amount + ";" + time;
+    }
+
     @Override
-    public String toString() {
-        return "ssn=" + String.valueOf(ssn) + " amount=" + String.valueOf(amount) + " time=" + String.valueOf(time);
+    public String toString(){
+        return "ssn=" + ssn + " amount=" + amount + " time=" + time;
     }
 }

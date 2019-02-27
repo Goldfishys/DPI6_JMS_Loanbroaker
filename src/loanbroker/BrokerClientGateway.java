@@ -7,10 +7,7 @@ import mix.model.bank.BankInterestRequest;
 import mix.model.loan.LoanReply;
 import mix.model.loan.LoanRequest;
 
-import javax.jms.JMSException;
-import javax.jms.Message;
-import javax.jms.MessageListener;
-import javax.jms.ObjectMessage;
+import javax.jms.*;
 import java.util.HashMap;
 
 public class BrokerClientGateway {
@@ -22,16 +19,16 @@ public class BrokerClientGateway {
         this.LoanBrokerFrame = LoanBrokerFrame;
         sender = new MessageSender();
         reciever = new MessageReceiver("tcp://localhost:61616", "LoanRequestDestination");
-        MessageListener ml = message -> OnLoanRequestArrived(message);
+        MessageListener ml = message -> OnLoanRequestArrived((TextMessage) message);
         reciever.setListener(ml);
     }
 
-    public void OnLoanRequestArrived(Message msg) {
+    public void OnLoanRequestArrived(TextMessage msg) {
         System.out.println(msg);
         try {
             //save msg in HashMap
             String id = msg.getJMSCorrelationID();
-            LoanRequest LR = (LoanRequest) ((ObjectMessage) msg).getObject();
+            LoanRequest LR = new LoanRequest(msg.getText());
 
             LoanBrokerFrame.setNewLoanRequest(LR, id);
         } catch (JMSException e) {
@@ -41,6 +38,6 @@ public class BrokerClientGateway {
 
     public void SendLoanReplyToClient(String id, BankInterestReply BIR){
         LoanReply loanReply = new LoanReply(BIR.getInterest(), BIR.getQuoteId());
-        sender.SendObject("tcp://localhost:61616", "LoanReplyDestination", loanReply, id);
+        sender.SendMessage("tcp://localhost:61616", "LoanReplyDestination", loanReply.Serialize(), id);
     }
 }

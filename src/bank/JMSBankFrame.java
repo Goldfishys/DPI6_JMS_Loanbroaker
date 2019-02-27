@@ -103,14 +103,18 @@ public class JMSBankFrame extends JFrame {
 			public void actionPerformed(ActionEvent e) {
 				//get msgid
 				RequestReply<BankInterestRequest, BankInterestReply> rr = list.getSelectedValue();
+				if(rr != null){
 			 	BankInterestRequest	request = rr.getRequest();
 
 				//create reply
 				double interest = Double.parseDouble((tfReply.getText()));
 				BankInterestReply reply = new BankInterestReply(interest,"ABN AMRO");
+				rr.setReply(reply);
+				list.repaint();
 
 				//send msg through gateway
 				bankGateway.SendBankInterestReply(request, reply);
+				}
 			}
 		});
 		GridBagConstraints gbc_btnSendReply = new GridBagConstraints();

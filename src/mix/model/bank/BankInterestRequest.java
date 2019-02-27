@@ -24,6 +24,12 @@ public class BankInterestRequest implements Serializable {
         this.time = time;
     }
 
+    public BankInterestRequest(String str){
+        String[] args = str.split(";");
+        amount = Integer.valueOf(args[0]);
+        time = Integer.valueOf(args[1]);
+    }
+
     public int getAmount() {
         return amount;
     }
@@ -40,8 +46,13 @@ public class BankInterestRequest implements Serializable {
         this.time = time;
     }
 
+
+    public String Serialize() {
+        return amount + ";" + time;
+    }
+
     @Override
-    public String toString() {
+    public String toString(){
         return " amount=" + amount + " time=" + time;
     }
 }
